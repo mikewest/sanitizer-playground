@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML Sanitizer API Playground</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&family=Roboto+Slab:wght@100;500&display=swap" rel="stylesheet" crossorigin="anonymous">
+  <style>
+    body, html {
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      background: black;
+      color: white;
+      font: 100 40px/1.2 'Roboto Slab', sans-serif;
+      margin: 0 0 40px 0;
+      padding: 40px;
+      text-align: right;
+    }
+    article {
+      max-width: 750px;
+      margin: 0 auto;
+    }
+    h2 {
+      font: 800 24px/1.2 'Open Sans', sans-serif;
+    }
+    p, ul {
+      font: 18px/1.2 'Open Sans', sans-serif;
+    }
+
+    #input {
+      display: block;
+      width: 100%;
+      height: 200px;
+      margin: 0 0 1em 0;
+      box-sizing: border-box;
+      padding: 1em;
+      font-size: 1.2em;
+    }
+    button {
+      margin: 0 1em 0 0;
+    }
+
+    #output {
+      width: 750px;
+      min-height: 200px;
+      box-sizing: border-box;
+      border-radius: 8px;
+      padding: 1em;
+      box-shadow: 0 16px 24px 2px rgb(29 17 51 / 4%), 0 6px 32px 4px rgb(9 32 77 / 12%), 0 8px 12px -5px rgb(29 17 51 / 12%);
+    }
+    footer {
+      background: black;
+      color: white;
+      margin: 1em 0 0 0;
+      padding: 1ch 2ch;
+      font: 15px/1.4 'Open Sans', sans-serif;
+      text-align: right;
+    }
+      footer a, footer a:visited {
+        font-family: monospace;
+        color: #52cbff;
+      }
+    .warning {
+      color: red;
+      background: #FFFFCA;
+      margin: 1.5em 0;
+      padding: 0.5em 1em;
+      position: relative;
+      margin-top: 2em;
+      padding-top: 1em;
+      padding-bottom: 1em;
+    }
+    .warning::before {
+      color: yellow;
+      background: red;
+      padding: 0.15em 0.25em;
+      position: absolute;
+      top: -0.8em;
+      left: -0.8em;
+      content: '\26A0 Warning!';
+    }
+    pre {
+      margin: 0 auto 20px;
+      padding: 20px 8px 20px 20px;
+      font: 24px/1.2 monospace;
+      max-width: 710px;
+      background: #FCFAEE;
+      border: 0 solid #E0CB52;
+      border-width: 0 0 0 0.5em;
+      color: #555;
+    }
+      pre strong { color: #000; }
+  </style>
+</head>
+<body>
+  <h1>HTML Sanitizer API Playground</h1>
+  <article>
+    <p>
+      The <a href="https://wicg.github.io/sanitizer-api/">HTML Sanitizer API</a> is an API that
+      sanitizes an untrusted string, minimizing the risk of unintended script execution. Amazing,
+      right?
+    </p>
+ 
+    <h2>Input</h2>
+    <textarea id="input">&lt;p&gt;
+  This is a very boring string that
+  &lt;em onclick="alert('onclick fired!')"&gt;certainly&lt;/em&gt;
+  does not contain injection attacks of any sort.
+  &lt;img src="data:..." onerror="alert('onerror fired!')"&gt;
+&lt;/p&gt;</textarea>
+    <button id="sanitize">Sanitize!</button>
+    <button id="inject">Inject <em>without</em> sanitization.</button>
+    <button id="permalink">Copy a link to this input.</button>
+
+    <h2>Output</h2>
+    <p>Script execution shouldn't happen here:</p>
+    <div id="output"></div>
+
+    <h2>How does it work?</h2>
+    <p>
+      The API's shape and behavior is still under
+      <a href="https://github.com/WICG/sanitizer-api/issues">active discussion</a>, so we'd
+      appreciate your early feedback. This page is meant as a quick demonstration of the
+      very basics of the API, to give you a feel for it's usage. Here, that boils down to the
+      following:
+    </p>
+    <pre><code>const s = <strong>new Sanitizer()</strong>;
+el.replaceChildren(<strong>s.sanitize(<em>untrustedInput</em>)</strong>);</code></pre>
+    <p>The goal is for that default configuration to ensure that the browser won't execute any code
+    as a result of inserting the resulting nodes. You may need to change the sanitizer's
+    configuration if your application has special needs. Configuration options are
+    <a href="https://wicg.github.io/sanitizer-api/#config">documented in the specification</a>.
+    For example, you may wish to block some style vectors in addition to script:</p>
+    <pre><code><strong>const config = {
+    dropAttributes: { "style": ["*"] },
+    dropElements: [ "style" ]
+};</strong>
+const s = new Sanitizer(<strong><em>config</em></strong>);
+el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
+
+  </article>
+  <footer>
+    Typos? Mistakes? Poke at <a href="https://github.com/mikewest/sanitizer-playground">mikewest/sanitizer-playground</a> on GitHub.
+  </footer>
+  <script>
+    const input = document.querySelector('#input');
+    const output = document.querySelector('#output');
+    
+    // Accept input via an `input` GET parameter:
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("input")) {
+      input.value = decodeURIComponent(params.get('input'));
+    }
+
+    // Warn if the sanitizer doesn't appear to be available:
+    if (!("Sanitizer" in window)) {
+      const p = document.createElement('p');
+      p.className = "warning";
+      p.textContent = "This browser doesn't appear to support the `Sanitizer` interface; the buttons below won't do much... Try Chrome Canary with `chrome://flags/#enable-experimental-web-platform-features` enabled? Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?";
+      sanitize.before(p);
+    }
+
+    // Sanitization Handler
+    document.querySelector('#sanitize').addEventListener('click', _ => {
+      const sanitizer = new Sanitizer();
+      output.replaceChildren(sanitizer.sanitize(input.value));
+    });
+
+    // Injection Handler
+    document.querySelector('#inject').addEventListener('click', _ => {
+      output.innerHTML = input.value;
+    });
+
+    // Permalink Handler
+    document.querySelector('#permalink').addEventListener('click', _ => {
+      window.location.search = "?input=" + encodeURIComponent(input.value);
+    });
+  </script>
+</body>
+</html>
