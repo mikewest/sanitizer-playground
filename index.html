@@ -20,12 +20,23 @@
     <textarea id="input">&lt;p&gt;
   This is a very boring string that
   &lt;em onclick="alert('onclick fired!')"&gt;certainly&lt;/em&gt;
-  does not contain injection attacks of any sort.
+  does &lt;span style="font-weight:800;"&gt;not&lt;/span&gt; contain
+  injection attacks of any sort.
   &lt;img src="data:image/png," onerror="alert('onerror fired!')"&gt;
-&lt;/p&gt;</textarea>
+&lt;/p&gt;
+&lt;style&gt;
+&lt;/style&gt;</textarea>
     <p><a href="#" id="permalink">Link to this input.</a></p>
 
     <h2>Live Output</h2>
+    
+    <p><strong>Configuration: </strong><code>new Sanitizer(</code><select id="config">
+      <option value="empty">{}</option>
+      <option value="no-attributes">{ "allowAttributes": [] }</option>
+      <option value="no-elements">{ "allowElements": [] }</option>
+      <option value="no-style">{ "dropAttributes": { "style": ["*"] }, "dropElements": [ "style" ] }</option>
+    </select><code>)</code></p>
+
     <p><code>sanitizeToString(<em>input</em>)</code>:</p>
     <output for="input"></output>
 
@@ -59,7 +70,7 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
   <footer>
     Typos? Mistakes? Poke at <a href="https://github.com/mikewest/sanitizer-playground">mikewest/sanitizer-playground</a> on GitHub.
   </footer>
-  <script nonce="not-really-a-nonce">
+  <script>
     // Warn if the sanitizer doesn't appear to be available:
     if (!("Sanitizer" in window)) {
       const p = document.createElement('p');
@@ -73,6 +84,7 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
     const outputDiv = document.querySelector('#output');
     const outputText = document.querySelector('output');
     const permalink = document.querySelector('#permalink');
+    const config = document.querySelector('#config');
 
     // Populate <textarea> via an `input` GET parameter:
     const params = new URLSearchParams(window.location.search);
@@ -85,14 +97,25 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
       outputDiv.innerHTML = input.value;
     });
    
-    // Register updater for <textarea> input:
+    // Register updater for <textarea> input and <select> changes:
     function update() {
-      const sanitizer = new Sanitizer();
+      // Update the permalink:
+      permalink.href = "?input=" + encodeURIComponent(input.value);
+
+      // Grab the configuration data from the <select> element above:
+      let conf = JSON.parse(config.selectedOptions[0].innerText);
+
+      // Create a Sanitizer with that configuration:
+      const sanitizer = new Sanitizer(conf);
+
+      // Use the sanitizer to inject the <textarea>'s value safely into the DOM
+      // via `Node.replaceChildren()` and to render the textual output into the
+      // <output> element's `Node.innerText`:
       outputDiv.replaceChildren(sanitizer.sanitize(input.value));
       outputText.textContent = sanitizer.sanitizeToString(input.value);
-      permalink.href = "?input=" + encodeURIComponent(input.value);
     }
     input.addEventListener('keyup', update);
+    config.addEventListener('change', update);
 
     // Update the output with whatever's in the <textarea> to begin with.
     update();
