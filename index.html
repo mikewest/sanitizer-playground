@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HTML Sanitizer API Playground</title>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&family=Roboto+Slab:wght@100;500&display=swap" rel="stylesheet" crossorigin="anonymous">
-  <link href="/style.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
 
   <meta name="twitter:card" content="summary">
   <meta name="twitter:site" content="@mikewest">
@@ -22,7 +22,7 @@
       sanitizes an untrusted string, minimizing the risk of unintended script execution. Amazing,
       right?
     </p>
- 
+
     <h2>Untrusted Input</h2>
     <textarea id="input">&lt;p&gt;
   This is a very boring string that
@@ -36,7 +36,7 @@
     <p><a href="#" id="permalink">Link to this input.</a></p>
 
     <h2>Live Output</h2>
-    
+
     <p><strong>Configuration: </strong><code>new Sanitizer(</code><select id="config">
       <option value="empty">{}</option>
       <option value="no-attributes">{ "allowAttributes": [] }</option>
@@ -85,7 +85,7 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
       p.textContent = "This browser doesn't appear to support the `Sanitizer` interface; nothing below will do much... Try Chrome Canary with `chrome://flags/#enable-experimental-web-platform-features` enabled? Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?";
       document.querySelector('p').before(p);
     }
-   
+
     // Exciting constant element references!
     const input = document.querySelector('#input');
     const outputDiv = document.querySelector('#output');
@@ -103,7 +103,7 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
     document.querySelector('#inject').addEventListener('click', _ => {
       outputDiv.innerHTML = input.value;
     });
-   
+
     // Register updater for <textarea> input and <select> changes:
     function update() {
       // Update the permalink:
