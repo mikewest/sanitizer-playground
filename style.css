@@ -22,6 +22,9 @@ p, ul {
   font: 18px/1.2 'Open Sans', sans-serif;
 }
 
+select {
+  max-width: 100%;
+}
 #input {
   display: block;
   width: 100%;
@@ -41,6 +44,7 @@ p, ul {
 
 #output, output {
   width: 750px;
+  max-width: 100%;
   min-height: 200px;
   box-sizing: border-box;
   border-radius: 8px;
@@ -93,5 +97,7 @@ pre {
   border: 0 solid #E0CB52;
   border-width: 0 0 0 0.5em;
   color: #555;
+  white-space: pre;
+  overflow: auto;
 }
   pre strong { color: #000; }
