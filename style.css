@@ -41,12 +41,13 @@ select {
   #configtext {
     font-family: monospace;
     font-size: 1em;
+    width: 100%;
   }
 #inject {
   margin: 1em 0;
 }
 
-#output, output{
+#output, output {
   width: 750px;
   max-width: 100%;
   min-height: 200px;
