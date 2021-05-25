@@ -23,7 +23,7 @@
       right?
     </p>
 
-    <h2>Untrusted Input</h2>
+    <h2>Input String</h2>
     <textarea id="input">&lt;p&gt;
   This is a very boring string that
   &lt;em onclick="alert('onclick fired!')"&gt;certainly&lt;/em&gt;
@@ -35,21 +35,41 @@
 &lt;/style&gt;</textarea>
     <p><a href="#" id="permalink">Link to this input.</a></p>
 
+    <h2>Sanitizer Configuration</h2>
+
+    <p>
+      The Sanitizer default configuration is safe and will likely suffice for
+      many applications. Note that all sanitizers guarantee a safe baseline,
+      so even a misconfigured Sanitizer will not allow script execution.
+    </p>
+
+    <p>
+      <strong>Configuration: </strong>
+      <select id="configselect">
+        <option value="default">default</option>
+        <option value="textonly">text only</option>
+        <option value="style">allow simple styling</option>
+        <option value="misconfigured">misconfigured to allow event handlers</option>
+        <option value="custom">custom (edit below)</option>
+      </select>
+    </p>
+
+    <p id="setconfig">
+      <code>const config = </code>
+      <textarea id="configtext"></textarea>
+    </p>
+    <p>
+      <code>const sanitizer = new Sanitizer(<span id="useconfig">config</span>);</code>
+    </p>
+
     <h2>Live Output</h2>
 
-    <p><strong>Configuration: </strong><code>new Sanitizer(</code><select id="config">
-      <option value="empty">{}</option>
-      <option value="no-attributes">{ "allowAttributes": [] }</option>
-      <option value="no-elements">{ "allowElements": [] }</option>
-      <option value="no-style">{ "dropAttributes": { "style": ["*"] }, "dropElements": [ "style" ] }</option>
-    </select><code>)</code></p>
-
-    <p><code>sanitizeToString(<em>input</em>)</code>:</p>
-    <output for="input"></output>
-
-    <p><code>sanitize(<em>input</em>)</code>:</p>
+    <p><code>node.replaceChildren(sanitizer.sanitize(<em>input</em>))</code>:</p>
     <div id="output"></div>
     <button id="inject">Inject <em>without</em> sanitization, just for grins.</button>
+
+    <p><code>sanitizer.sanitizeToString(<em>input</em>);</code></p>
+    <output for="input"></output>
 
     <h2>How does it work?</h2>
     <p>
@@ -85,13 +105,26 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
       p.textContent = "This browser doesn't appear to support the `Sanitizer` interface; nothing below will do much... Try Chrome Canary with `chrome://flags/#enable-experimental-web-platform-features` enabled? Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?";
       document.querySelector('p').before(p);
     }
-
     // Exciting constant element references!
     const input = document.querySelector('#input');
     const outputDiv = document.querySelector('#output');
     const outputText = document.querySelector('output');
     const permalink = document.querySelector('#permalink');
-    const config = document.querySelector('#config');
+    const configSelect = document.querySelector('#configselect');
+    const configText = document.querySelector('#configtext');
+
+    const sampleConfigs = {
+      default: {},
+      textonly: { allowElements: [] },
+      style: {
+        allowElements: [ "div", "span", "p", "em", "b" ],
+        allowAttributes: { "class": ["*"], "style": ["*"] },
+      },
+      misconfigured: {
+        allowElements: [ "em", "img" ],
+        allowAttributes: { "onclick": ["*"], "onerror": ["*"] },
+      },
+    };
 
     // Populate <textarea> via an `input` GET parameter:
     const params = new URLSearchParams(window.location.search);
@@ -109,20 +142,41 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
       // Update the permalink:
       permalink.href = "?input=" + encodeURIComponent(input.value);
 
-      // Grab the configuration data from the <select> element above:
-      let conf = JSON.parse(config.selectedOptions[0].innerText);
+      // Determine the current config and update the text box.
+      const currentConfig = configSelect.selectedOptions[0].value;
+      if (currentConfig in sampleConfigs)
+        configText.value = JSON.stringify(sampleConfigs[currentConfig], null, 1);
+
+      // Hide/show the config box for default/non-default configs.
+      const isDefault = currentConfig == "default" ? "none" : "";
+      document.querySelector("#setconfig").style.display = isDefault;
+      document.querySelector("#useconfig").style.display = isDefault;
+
+      // Make the config box editable when "custom" is selected.
+      configText.readOnly = currentConfig != "custom";
 
       // Create a Sanitizer with that configuration:
-      const sanitizer = new Sanitizer(conf);
+      try {
+        const conf = JSON.parse(configText.value);
+        const sanitizer = new Sanitizer(conf);
 
-      // Use the sanitizer to inject the <textarea>'s value safely into the DOM
-      // via `Node.replaceChildren()` and to render the textual output into the
-      // <output> element's `Node.innerText`:
-      outputDiv.replaceChildren(sanitizer.sanitize(input.value));
-      outputText.textContent = sanitizer.sanitizeToString(input.value);
+        // Use the sanitizer to inject the <textarea>'s value safely into the DOM
+        // via `Node.replaceChildren()` and to render the textual output into the
+        // <output> element's `Node.innerText`:
+        outputDiv.replaceChildren(sanitizer.sanitize(input.value));
+        outputText.textContent = sanitizer.sanitizeToString(input.value);
+      } catch (err) {
+        // Display an error when we can't parse the config text.
+        const p = document.createElement('p');
+        p.className = "warning";
+        p.textContent = "Cannot parse the configuration dictionary.";
+        outputDiv.replaceChildren(p);
+        outputText.textContent = "";
+      }
     }
     input.addEventListener('keyup', update);
-    config.addEventListener('change', update);
+    configSelect.addEventListener('change', update);
+    configText.addEventListener('input', update);
 
     // Update the output with whatever's in the <textarea> to begin with.
     update();
