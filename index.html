@@ -6,7 +6,6 @@
   <title>HTML Sanitizer API Playground</title>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&family=Roboto+Slab:wght@100;500&display=swap" rel="stylesheet" crossorigin="anonymous">
   <link href="style.css" rel="stylesheet">
-
   <meta name="twitter:card" content="summary">
   <meta name="twitter:site" content="@mikewest">
   <meta name="og:title" content="Play with the HTML Sanitizer API.">
@@ -17,10 +16,12 @@
 <body>
   <h1>HTML Sanitizer API Playground</h1>
   <article>
+    <div id="warnings"></div>
     <p>
-      The <a href="https://wicg.github.io/sanitizer-api/">HTML Sanitizer API</a> is an API that
-      sanitizes an untrusted string, minimizing the risk of unintended script execution. Amazing,
-      right?
+      The <a href="https://wicg.github.io/sanitizer-api/">HTML Sanitizer API</a>
+      is an API that <a href="https://en.wikipedia.org/wiki/HTML_sanitization">sanitizes</a>
+      untrusted HTML for insertion into the DOM, minimizing the risk of
+      unintended script execution.
     </p>
 
     <h2>Input String</h2>
@@ -31,45 +32,56 @@
   injection attacks of any sort.
   &lt;img src="data:image/png," onerror="alert('onerror fired!')"&gt;
 &lt;/p&gt;
+&lt;td&gt;Let's try a table cell.&lt;/td&gt;
 &lt;style&gt;
 &lt;/style&gt;</textarea>
     <p><a href="#" id="permalink">Link to this input.</a></p>
 
     <h2>Sanitizer Configuration</h2>
-
     <p>
       The Sanitizer default configuration is safe and will likely suffice for
       many applications. Note that all sanitizers guarantee a safe baseline,
       so even a misconfigured Sanitizer will not allow script execution.
     </p>
-
     <p>
+      <strong>For: </strong>
+      <select id="contextselect">
+        <option value="div">div</option>
+        <option value="table">table</option>
+        <option value="custom">other (edit below)</option>
+      </select>
+      <span>&nbsp;</span>
       <strong>Configuration: </strong>
       <select id="configselect">
         <option value="default">default</option>
-        <option value="textonly">text only</option>
-        <option value="style">allow simple styling</option>
-        <option value="misconfigured">misconfigured to allow event handlers</option>
+        <option value="textonly">text only (no elements)</option>
+        <option value="style">only simple styling</option>
+        <option value="misconfigured">misconfigured</option>
         <option value="custom">custom (edit below)</option>
       </select>
     </p>
-
-    <p id="setconfig">
+    <p id="contextother" class="invisible">
+      <code>For (parse context): <input id="contexttext"></input></code>
+    </p>
+    <div id="configother" class="invisible">
       <code>const config = </code>
       <textarea id="configtext"></textarea>
-    </p>
-    <p>
-      <code>const sanitizer = new Sanitizer(<span id="useconfig">config</span>);</code>
-    </p>
+    </div>
 
     <h2>Live Output</h2>
+    <p>
+      <code>
+        <span>const sanitizer = new Sanitizer(<span id="configuse">config</span>);</span><br>
+        <span>node.replaceChildren(...sanitizer.sanitizeFor(<em><span id="contextuse">context</span></em>, </span><em>input</em>));
+      </code>
+    </p>
 
-    <p><code>node.replaceChildren(sanitizer.sanitize(<em>input</em>))</code>:</p>
-    <div id="output"></div>
+    <div id="output">
+      <div></div>
+      <div></div>
+    </div>
+
     <button id="inject">Inject <em>without</em> sanitization, just for grins.</button>
-
-    <p><code>sanitizer.sanitizeToString(<em>input</em>);</code></p>
-    <output for="input"></output>
 
     <h2>How does it work?</h2>
     <p>
@@ -80,41 +92,55 @@
       following:
     </p>
     <pre><code>const s = <strong>new Sanitizer()</strong>;
-el.replaceChildren(<strong>s.sanitize(<em>untrustedInput</em>)</strong>);</code></pre>
-    <p>The goal is for that default configuration to ensure that the browser won't execute any code
-    as a result of inserting the resulting nodes. You may need to change the sanitizer's
-    configuration if your application has special needs. Configuration options are
+// If the input is available as DOM nodes (e.g. in a frame).
+el.replaceChildren(<strong>s.sanitize(<em>untrustedNodes</em>)</strong>);
+// If the input is available as a string.
+el.<strong>SetHTML(<em>untrustedString</em>, <em>s</em>)</strong>;
+// If the input is available as a string, but cannot be set right away:
+// The <em>context</em> parameter describes the node type this result is intended for.
+const node = <strong>s.sanitizeFor(<em>context</em>, <em>untrustedString</em>);</strong></code></pre>
+    <p>The goal for the default configuration is to ensure that the browser won't
+    execute any code as a result of inserting the resulting nodes. You may need
+    to change the sanitizer's configuration if your application has special needs.
+    Configuration options are
     <a href="https://wicg.github.io/sanitizer-api/#config">documented in the specification</a>.
     For example, you may wish to block some style vectors in addition to script:</p>
     <pre><code><strong>const config = {
     dropAttributes: { "style": ["*"] },
     dropElements: [ "style" ]
 };</strong>
-const s = new Sanitizer(<strong><em>config</em></strong>);
-el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
+const <strong>s</strong> = new Sanitizer(<strong><em>config</em></strong>);
+el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
 
   </article>
   <footer>
     Typos? Mistakes? Poke at <a href="https://github.com/mikewest/sanitizer-playground">mikewest/sanitizer-playground</a> on GitHub.
   </footer>
+  <template id="warnsanitizefor">
+    <p class="warning">Cannot call Sanitizer.sanitizeFor.</p>
+  </template>
+  <template id="warnparseconfig">
+    <p class="warning">Cannot parse configuration dictionary.</p>
+  </template>
+  <template id="warnpresence">
+    <p class="warning">
+      This browser doesn't appear to support the `Sanitizer` interface.
+      Nothing below will do much.
+      <br>Try Chrome M94 or greater with `chrome://flags/#sanitizer-api` enabled?
+      <br>Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?
+    </p>
+  </template>
+  <template  id="warnoldversion">
+    <p class="warning">
+      This browser supports an older version of the `Sanitizer`interface.
+      Nothing below will do much.
+      <br>Try Chrome M94 or greater with `chrome://flags/#sanitizer-api` enabled?
+      <br>Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?
+    </p>
+  </template>
   <script>
-    // Warn if the sanitizer doesn't appear to be available:
-    if (!("Sanitizer" in window)) {
-      const p = document.createElement('p');
-      p.className = "warning";
-      p.textContent = "This browser doesn't appear to support the `Sanitizer` interface; nothing below will do much... Try Chrome Canary with `chrome://flags/#enable-experimental-web-platform-features` enabled? Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?";
-      document.querySelector('p').before(p);
-    }
-    // Exciting constant element references!
-    const input = document.querySelector('#input');
-    const outputDiv = document.querySelector('#output');
-    const outputText = document.querySelector('output');
-    const permalink = document.querySelector('#permalink');
-    const configSelect = document.querySelector('#configselect');
-    const configText = document.querySelector('#configtext');
-
-    const sampleConfigs = {
-      default: {},
+    const configs = {
+      "default": {},
       textonly: { allowElements: [] },
       style: {
         allowElements: [ "div", "span", "p", "em", "b" ],
@@ -126,59 +152,110 @@ el.replaceChildren(s.sanitize(<em>untrustedInput</em>));</code></pre>
       },
     };
 
-    // Populate <textarea> via an `input` GET parameter:
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("input")) {
-      input.value = decodeURIComponent(params.get('input'));
+    // Exciting constant element references!
+    const input = document.querySelector('#input');
+    const outputHtml = document.querySelector('#output div:nth-of-type(1)');
+    const outputText = document.querySelector('#output div:nth-of-type(2)');
+    const configSelect = document.querySelector('#configselect');
+    const configText = document.querySelector('#configtext');
+    const configOther = document.querySelector('#configother');
+    const configUse = document.querySelector('#configuse');
+    const contextSelect = document.querySelector('#contextselect');
+    const contextText = document.querySelector('#contexttext');
+    const contextOther = document.querySelector('#contextother');
+    const contextUse = document.querySelector('#contextuse');
+    const permalink = document.querySelector('#permalink');
+    const warnings = document.getElementById("warnings");
+
+    function replace(node, templateid) {
+      const fragment = document.getElementById(templateid).content.cloneNode(true);
+      node.replaceChildren(...fragment.children);
     }
+    function init() {
+      // Display warnings (if Sanitizer is not supported or current)
+      if (!("Sanitizer" in window)) {
+        replace(warnings, "warnpresence");
+      } else if ("sanitizeToString" in window.Sanitizer.prototype) {
+        replace(warnings, "warnoldversion");
+      }
+      // Populate <textarea> via an `input` GET parameter:
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("input")) {
+        input.value = decodeURIComponent(params.get('input'));
+      }
+    }
+    function listeners() {
+      // Register the pure injection Handler
+      document.querySelector('#inject').addEventListener('click', _ => {
+        outputHtml.innerHTML = input.value;
+        outputText.textContent = outputHtml.innerHTML;
+      });
 
-    // Register the pure injection Handler
-    document.querySelector('#inject').addEventListener('click', _ => {
-      outputDiv.innerHTML = input.value;
-    });
-
-    // Register updater for <textarea> input and <select> changes:
+      // Register updaters for various input elements:
+      input.addEventListener('keyup', update);
+      contextSelect.addEventListener('change', update);
+      contextText.addEventListener('input', update);
+      configSelect.addEventListener('change', update);
+      configText.addEventListener('input', update);
+    }
     function update() {
       // Update the permalink:
       permalink.href = "?input=" + encodeURIComponent(input.value);
 
-      // Determine the current config and update the text box.
-      const currentConfig = configSelect.selectedOptions[0].value;
-      if (currentConfig in sampleConfigs)
-        configText.value = JSON.stringify(sampleConfigs[currentConfig], null, 1);
+      // Update the current parse context, from the dropdowi or "custom".
+      let context = contextSelect.selectedOptions[0].value;
+      if (context == "custom") {
+        context = contextText.value;
+        contextOther.className = "";
+      } else {
+        contextOther.className = "invisible";
+        contextText.value = context;
+      }
+      contextUse.textContent = `"${context}"`;
 
-      // Hide/show the config box for default/non-default configs.
-      const isDefault = currentConfig == "default" ? "none" : "";
-      document.querySelector("#setconfig").style.display = isDefault;
-      document.querySelector("#useconfig").style.display = isDefault;
-
-      // Make the config box editable when "custom" is selected.
-      configText.readOnly = currentConfig != "custom";
+      // Update the current config, from the dropdown, "custom", or "default";
+      let config = configSelect.selectedOptions[0].value;
+      if (config == "default") {
+        configOther.className = "invisible";
+        configUse.textContent = "";
+        configText.readOnly = true;
+        configText.value = "{}"
+      } else if (config == "custom") {
+        configOther.className = "";
+        configText.readOnly = false;
+        configUse.textContent = "config";
+      } else {
+        configOther.className = "";
+        configUse.textContent = "config";
+        configText.value = JSON.stringify(configs[config], null, 1);
+        configText.readOnly = true;
+      }
 
       // Create a Sanitizer with that configuration:
+      let sanitizer = null;
       try {
         const conf = JSON.parse(configText.value);
-        const sanitizer = new Sanitizer(conf);
-
-        // Use the sanitizer to inject the <textarea>'s value safely into the DOM
-        // via `Node.replaceChildren()` and to render the textual output into the
-        // <output> element's `Node.innerText`:
-        outputDiv.replaceChildren(sanitizer.sanitize(input.value));
-        outputText.textContent = sanitizer.sanitizeToString(input.value);
+        sanitizer = new Sanitizer(conf);
       } catch (err) {
-        // Display an error when we can't parse the config text.
-        const p = document.createElement('p');
-        p.className = "warning";
-        p.textContent = "Cannot parse the configuration dictionary.";
-        outputDiv.replaceChildren(p);
-        outputText.textContent = "";
+        replace(outputHtml, "warnparseconfig");  // Display a parse error.
+        return;
+      }
+
+      // Use the sanitizer to inject the <textarea>'s value safely into the DOM
+      // via `Node.replaceChildren()` and to render the textual output into the
+      // <output> element's `Node.innerText`:
+      try {
+        let result = sanitizer.sanitizeFor(context, input.value);
+        outputText.textContent = result.innerHTML;  // As text.
+        outputHtml.replaceChildren(...result.childNodes);  // Replace nodes.
+      } catch (err) {
+        replace(outputHtml, "warnsanitizefor");  // Display Sanitizer API error.
+        return;
       }
     }
-    input.addEventListener('keyup', update);
-    configSelect.addEventListener('change', update);
-    configText.addEventListener('input', update);
 
-    // Update the output with whatever's in the <textarea> to begin with.
+    init();
+    listeners();
     update();
   </script>
 </body>

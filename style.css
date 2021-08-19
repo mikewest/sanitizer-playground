@@ -40,27 +40,31 @@ select {
   }
   #configtext {
     font-family: monospace;
-    font-size: 1em;
   }
 #inject {
   margin: 1em 0;
 }
 
-#output, output {
+#output { display: flex; }
+#output > div {
+  flex: 1;
+  display: block;
   width: 750px;
-  max-width: 100%;
+  max-width: 50%;
   min-height: 200px;
   box-sizing: border-box;
   border-radius: 8px;
   padding: 1em;
   box-shadow: 0 16px 24px 2px rgb(29 17 51 / 4%), 0 6px 32px 4px rgb(9 32 77 / 12%), 0 8px 12px -5px rgb(29 17 51 / 12%);
 }
-  output {
-    display: block;
-    white-space: pre;
-    font-family: monospace;
-    font-size: 1.2em;
-  }
+#output > div:first-child {
+  margin-right: 1em;
+}
+#output > div:nth-of-type(2) {
+  font-family: monospace;
+  font-size: 1.2em;
+}
+
 footer {
   background: black;
   color: white;
@@ -92,10 +96,13 @@ footer {
   left: -0.8em;
   content: '\26A0 Warning!';
 }
+.invisible {
+  display: none !important;
+}
 pre {
   margin: 0 auto 20px;
   padding: 20px 8px 20px 20px;
-  font: 24px/1.2 monospace;
+  font: 1.2em monospace;
   max-width: 710px;
   background: #FCFAEE;
   border: 0 solid #E0CB52;
