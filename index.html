@@ -95,7 +95,7 @@
 // If the input is available as DOM nodes (e.g. in a frame).
 el.replaceChildren(<strong>s.sanitize(<em>untrustedNodes</em>)</strong>);
 // If the input is available as a string.
-el.<strong>SetHTML(<em>untrustedString</em>, <em>s</em>)</strong>;
+el.<strong>setHTML(<em>untrustedString</em>, <em>s</em>)</strong>;
 // If the input is available as a string, but cannot be set right away:
 // The <em>context</em> parameter describes the node type this result is intended for.
 const node = <strong>s.sanitizeFor(<em>context</em>, <em>untrustedString</em>);</strong></code></pre>
@@ -110,7 +110,7 @@ const node = <strong>s.sanitizeFor(<em>context</em>, <em>untrustedString</em>);<
     dropElements: [ "style" ]
 };</strong>
 const <strong>s</strong> = new Sanitizer(<strong><em>config</em></strong>);
-el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
+el.setHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
 
   </article>
   <footer>
