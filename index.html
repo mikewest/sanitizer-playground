@@ -44,13 +44,6 @@
       so even a misconfigured Sanitizer will not allow script execution.
     </p>
     <p>
-      <strong>For: </strong>
-      <select id="contextselect">
-        <option value="div">div</option>
-        <option value="table">table</option>
-        <option value="custom">other (edit below)</option>
-      </select>
-      <span>&nbsp;</span>
       <strong>Configuration: </strong>
       <select id="configselect">
         <option value="default">default</option>
@@ -72,7 +65,7 @@
     <p>
       <code>
         <span>const sanitizer = new Sanitizer(<span id="configuse">config</span>);</span><br>
-        <span>node.replaceChildren(...sanitizer.sanitizeFor(<em><span id="contextuse">context</span></em>, </span><em>input</em>));
+        <span>node.setHTML(<em>input</em>, {sanitizer: <em>sanitizer</em>});
       </code>
     </p>
 
@@ -92,13 +85,8 @@
       following:
     </p>
     <pre><code>const s = <strong>new Sanitizer()</strong>;
-// If the input is available as DOM nodes (e.g. in a frame).
-el.replaceChildren(<strong>s.sanitize(<em>untrustedNodes</em>)</strong>);
-// If the input is available as a string.
-el.<strong>SetHTML(<em>untrustedString</em>, <em>s</em>)</strong>;
-// If the input is available as a string, but cannot be set right away:
-// The <em>context</em> parameter describes the node type this result is intended for.
-const node = <strong>s.sanitizeFor(<em>context</em>, <em>untrustedString</em>);</strong></code></pre>
+el.<strong>setHTML(<em>untrustedString</em>, {sanitizer: <em>s</em>})</strong>;
+</code></pre>
     <p>The goal for the default configuration is to ensure that the browser won't
     execute any code as a result of inserting the resulting nodes. You may need
     to change the sanitizer's configuration if your application has special needs.
@@ -110,14 +98,14 @@ const node = <strong>s.sanitizeFor(<em>context</em>, <em>untrustedString</em>);<
     dropElements: [ "style" ]
 };</strong>
 const <strong>s</strong> = new Sanitizer(<strong><em>config</em></strong>);
-el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
+el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</code></pre>
 
   </article>
   <footer>
     Typos? Mistakes? Poke at <a href="https://github.com/mikewest/sanitizer-playground">mikewest/sanitizer-playground</a> on GitHub.
   </footer>
-  <template id="warnsanitizefor">
-    <p class="warning">Cannot call Sanitizer.sanitizeFor.</p>
+  <template id="warncannotcallsanitizer">
+    <p class="warning">Cannot call Element.setHTML.</p>
   </template>
   <template id="warnparseconfig">
     <p class="warning">Cannot parse configuration dictionary.</p>
@@ -126,7 +114,7 @@ el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
     <p class="warning">
       This browser doesn't appear to support the `Sanitizer` interface.
       Nothing below will do much.
-      <br>Try Chrome M94 or greater with `chrome://flags/#sanitizer-api` enabled?
+      <br>Try Chrome M105 or greater.
       <br>Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?
     </p>
   </template>
@@ -134,7 +122,7 @@ el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
     <p class="warning">
       This browser supports an older version of the `Sanitizer`interface.
       Nothing below will do much.
-      <br>Try Chrome M94 or greater with `chrome://flags/#sanitizer-api` enabled?
+      <br>Try Chrome M105 or greater.
       <br>Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?
     </p>
   </template>
@@ -160,10 +148,6 @@ el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
     const configText = document.querySelector('#configtext');
     const configOther = document.querySelector('#configother');
     const configUse = document.querySelector('#configuse');
-    const contextSelect = document.querySelector('#contextselect');
-    const contextText = document.querySelector('#contexttext');
-    const contextOther = document.querySelector('#contextother');
-    const contextUse = document.querySelector('#contextuse');
     const permalink = document.querySelector('#permalink');
     const warnings = document.getElementById("warnings");
 
@@ -193,25 +177,12 @@ el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
 
       // Register updaters for various input elements:
       input.addEventListener('keyup', update);
-      contextSelect.addEventListener('change', update);
-      contextText.addEventListener('input', update);
       configSelect.addEventListener('change', update);
       configText.addEventListener('input', update);
     }
     function update() {
       // Update the permalink:
       permalink.href = "?input=" + encodeURIComponent(input.value);
-
-      // Update the current parse context, from the dropdowi or "custom".
-      let context = contextSelect.selectedOptions[0].value;
-      if (context == "custom") {
-        context = contextText.value;
-        contextOther.className = "";
-      } else {
-        contextOther.className = "invisible";
-        contextText.value = context;
-      }
-      contextUse.textContent = `"${context}"`;
 
       // Update the current config, from the dropdown, "custom", or "default";
       let config = configSelect.selectedOptions[0].value;
@@ -246,14 +217,14 @@ el.SetHTML(<em>untrustedInput</em>, <strong><em>s</em></strong>);</code></pre>
       }
 
       // Use the sanitizer to inject the <textarea>'s value safely into the DOM
-      // via `Node.replaceChildren()` and to render the textual output into the
-      // <output> element's `Node.innerText`:
+      // and to render the textual output into the <output> element's
+      // `Node.innerText`:
       try {
-        let result = sanitizer.sanitizeFor(context, input.value);
-        outputText.textContent = result.innerHTML;  // As text.
-        outputHtml.replaceChildren(...result.childNodes);  // Replace nodes.
+        outputHtml.setHTML(input.value, {sanitizer: sanitizer});
+        outputText.textContent = outputHtml.innerHTML;  // Mirror as text.
       } catch (err) {
-        replace(outputHtml, "warnsanitizefor");  // Display Sanitizer API error.
+        // Display Sanitizer API error.
+        replace(outputHtml, "warncannotcallsanitizer");
         return;
       }
     }
