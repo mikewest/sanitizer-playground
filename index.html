@@ -21,7 +21,12 @@
       The <a href="https://wicg.github.io/sanitizer-api/">HTML Sanitizer API</a>
       is an API that <a href="https://en.wikipedia.org/wiki/HTML_sanitization">sanitizes</a>
       untrusted HTML for insertion into the DOM, minimizing the risk of
-      unintended script execution.
+      unintended script execution.<br>
+      In its simplest form, it allows you to replace <code>innerHTML=</code> with <code>setHTML()</code>.
+    </p>
+
+    <p>Sanitizing HTML can be simple, if you stick to safe defaults.<br>
+      But you can also make use of powerful customizations below.
     </p>
 
     <h2>Input String</h2>
@@ -78,24 +83,27 @@
 
     <h2>How does it work?</h2>
     <p>
-      The API's shape and behavior is still under
-      <a href="https://github.com/WICG/sanitizer-api/issues">active discussion</a>, so we'd
-      appreciate your early feedback. This page is meant as a quick demonstration of the
-      very basics of the API, to give you a feel for it's usage. Here, that boils down to the
+      The core of the API is the <code>Element.setHTML()</code> function, which can serve as a safe
+      alternative to setting <code>innerHTML</code>. When only an input string is supplied,
+      the browser will use a safe list of default elements and attributes.
+      However, you can also supply a config dictionary that allows to restrict or loosen the defaults.
+      Regardless of what you end up doing, the <code>setHTML()</code>  function will always keep its
+      core promise that all scripts will be removed.
+      This page is meant as a quick demonstration of the
+      very basics of the API, to give you a feel for its usage. Here, that boils down to the
       following:
     </p>
     <pre><code>const s = <strong>new Sanitizer()</strong>;
 el.<strong>setHTML(<em>untrustedString</em>, {sanitizer: <em>s</em>})</strong>;
 </code></pre>
     <p>The goal for the default configuration is to ensure that the browser won't
-    execute any code as a result of inserting the resulting nodes. You may need
+    execute any script as a result of inserting the resulting nodes. You may need
     to change the sanitizer's configuration if your application has special needs.
     Configuration options are
     <a href="https://wicg.github.io/sanitizer-api/#config">documented in the specification</a>.
-    For example, you may wish to block some style vectors in addition to script:</p>
+    For example, you may wish to only allow formatted text:</p>
     <pre><code><strong>const config = {
-    dropAttributes: { "style": ["*"] },
-    dropElements: [ "style" ]
+        "allowElements": ["p", "span", "s", "i", "b", "em", "strong", "u"]
 };</strong>
 const <strong>s</strong> = new Sanitizer(<strong><em>config</em></strong>);
 el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</code></pre>
