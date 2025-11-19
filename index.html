@@ -52,7 +52,7 @@
       <strong>Configuration: </strong>
       <select id="configselect">
         <option value="default">default</option>
-        <option value="textonly">text only (no elements)</option>
+        <option value="permissive">permissive (allow all except scripts)</option>
         <option value="style">only simple styling</option>
         <option value="misconfigured">misconfigured</option>
         <option value="custom">custom (edit below)</option>
@@ -69,8 +69,9 @@
     <h2>Live Output</h2>
     <p>
       <code>
-        <span>const sanitizer = new Sanitizer(<span id="configuse">config</span>);</span><br>
-        <span>node.setHTML(<em>input</em>, {sanitizer: <em>sanitizer</em>});
+        <span id="sethtmlwithoutconf">node.setHTML(<em>input</em>);</span>
+        <span id="createconf" class="invisible">const sanitizer = new Sanitizer(<span id="configuse">config</span>);</span><br>
+        <span id="useconf" class="invisible">node.setHTML(<em>input</em>, {sanitizer: <em>sanitizer</em>});
       </code>
     </p>
 
@@ -93,8 +94,7 @@
       very basics of the API, to give you a feel for its usage. Here, that boils down to the
       following:
     </p>
-    <pre><code>const s = <strong>new Sanitizer()</strong>;
-el.<strong>setHTML(<em>untrustedString</em>, {sanitizer: <em>s</em>})</strong>;
+    <pre>el.<strong>setHTML(<em>untrustedString</em>)</strong>;
 </code></pre>
     <p>The goal for the default configuration is to ensure that the browser won't
     execute any script as a result of inserting the resulting nodes. You may need
@@ -122,29 +122,26 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
     <p class="warning">
       This browser doesn't appear to support the `Sanitizer` interface.
       Nothing below will do much.
-      <br>Try Chrome M105 or greater.
-      <br>Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?
+      <br>Try Firefox Nightly or Chrome with experimental web platform features enabled.
     </p>
   </template>
   <template  id="warnoldversion">
     <p class="warning">
       This browser supports an older version of the `Sanitizer`interface.
       Nothing below will do much.
-      <br>Try Chrome M105 or greater.
-      <br>Or Firefox Nightly with `dom.security.sanitizer.enabled` set to true?
+      <br>Try Chrome with experimental web platform features enabled or Firefox Nightly.
     </p>
   </template>
   <script>
     const configs = {
-      "default": {},
-      textonly: { allowElements: [] },
+      permissive: {},
       style: {
-        allowElements: [ "div", "span", "p", "em", "b" ],
-        allowAttributes: { "class": ["*"], "style": ["*"] },
+        elements: ["p", "span", "s", "i", "b", "em", "strong", "u"],
+        attributes: ["class", "style"], //{ "class": ["*"], "style": ["*"] },
       },
       misconfigured: {
-        allowElements: [ "em", "img" ],
-        allowAttributes: { "onclick": ["*"], "onerror": ["*"] },
+        elements: ["p","em", "img"],
+        attributes: ["onclick", "onerror", "src"],
       },
     };
 
@@ -153,6 +150,9 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
     const outputHtml = document.querySelector('#output div:nth-of-type(1)');
     const outputText = document.querySelector('#output div:nth-of-type(2)');
     const configSelect = document.querySelector('#configselect');
+    const setWithoutConf = document.querySelector('#sethtmlwithoutconf');
+    const createConf = document.querySelector('#createconf');
+    const useConf = document.querySelector('#useconf');
     const configText = document.querySelector('#configtext');
     const configOther = document.querySelector('#configother');
     const configUse = document.querySelector('#configuse');
@@ -194,16 +194,34 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
 
       // Update the current config, from the dropdown, "custom", or "default";
       let config = configSelect.selectedOptions[0].value;
-      if (config == "default") {
+      if (config === "default") {
+        createConf.className = "invisible";
+        useConf.className = "invisible";
+        setWithoutConf.className = "";
         configOther.className = "invisible";
         configUse.textContent = "";
         configText.readOnly = true;
-        configText.value = "{}"
-      } else if (config == "custom") {
+        configText.value = "";
+      }
+      /*else if (config === "permissive") {
+        createConf.className = "";
+        useConf.className = "";
+        setWithoutConf.className = "invisible";
+        configOther.className = "invisible";
+        configText.readOnly = true;
+        configText.value = "{}";
+        configUse.textContent = "{}";
+      } */else if (config === "custom") {
+        createConf.className = "";
+        useConf.className = "";
+        setWithoutConf.className = "invisible";
         configOther.className = "";
         configText.readOnly = false;
         configUse.textContent = "config";
       } else {
+        createConf.className = "";
+        useConf.className = "";
+        setWithoutConf.className = "invisible";
         configOther.className = "";
         configUse.textContent = "config";
         configText.value = JSON.stringify(configs[config], null, 1);
@@ -216,22 +234,29 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
 
       // Create a Sanitizer with that configuration:
       let sanitizer = null;
-      try {
-        const conf = JSON.parse(configText.value);
-        sanitizer = new Sanitizer(conf);
-      } catch (err) {
-        replace(outputHtml, "warnparseconfig");  // Display a parse error.
-        return;
+      if (config !== "default") {
+        try {
+          const conf = JSON.parse(configText.value);
+          sanitizer = new Sanitizer(conf);
+        } catch (err) {
+          console.log(err);
+          replace(outputHtml, "warnparseconfig");  // Display a parse error.
+          return;
+        }
       }
-
       // Use the sanitizer to inject the <textarea>'s value safely into the DOM
       // and to render the textual output into the <output> element's
       // `Node.innerText`:
       try {
-        outputHtml.setHTML(input.value, {sanitizer: sanitizer});
+        if (config === "default") {
+            outputHtml.setHTML(input.value);
+        } else {
+            outputHtml.setHTML(input.value, {sanitizer: sanitizer});
+        }
         outputText.textContent = outputHtml.innerHTML;  // Mirror as text.
       } catch (err) {
         // Display Sanitizer API error.
+        console.log(err);
         replace(outputHtml, "warncannotcallsanitizer");
         return;
       }
