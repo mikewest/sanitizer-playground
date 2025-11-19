@@ -103,7 +103,7 @@
     <a href="https://wicg.github.io/sanitizer-api/#config">documented in the specification</a>.
     For example, you may wish to only allow formatted text:</p>
     <pre><code><strong>const config = {
-        "allowElements": ["p", "span", "s", "i", "b", "em", "strong", "u"]
+        "elements": ["p", "span", "s", "i", "b", "em", "strong", "u"]
 };</strong>
 const <strong>s</strong> = new Sanitizer(<strong><em>config</em></strong>);
 el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</code></pre>
@@ -143,6 +143,12 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
         elements: ["p","em", "img"],
         attributes: ["onclick", "onerror", "src"],
       },
+      custom: {
+          elements: [],
+          attributes: [],
+          dataAttributes: false,
+          comments: false,
+      }
     };
 
     // Exciting constant element references!
@@ -201,30 +207,14 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
         configOther.className = "invisible";
         configUse.textContent = "";
         configText.readOnly = true;
-        configText.value = "";
-      }
-      /*else if (config === "permissive") {
-        createConf.className = "";
-        useConf.className = "";
-        setWithoutConf.className = "invisible";
-        configOther.className = "invisible";
-        configText.readOnly = true;
-        configText.value = "{}";
-        configUse.textContent = "{}";
-      } */else if (config === "custom") {
-        createConf.className = "";
-        useConf.className = "";
-        setWithoutConf.className = "invisible";
-        configOther.className = "";
-        configText.readOnly = false;
-        configUse.textContent = "config";
-      } else {
+        configText.value = '"default"';
+      }  else {
         createConf.className = "";
         useConf.className = "";
         setWithoutConf.className = "invisible";
         configOther.className = "";
         configUse.textContent = "config";
-        configText.value = JSON.stringify(configs[config], null, 1);
+        configText.value = JSON.stringify(configs[config], null, 1)
         configText.readOnly = true;
       }
 
@@ -234,15 +224,13 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
 
       // Create a Sanitizer with that configuration:
       let sanitizer = null;
-      if (config !== "default") {
-        try {
-          const conf = JSON.parse(configText.value);
-          sanitizer = new Sanitizer(conf);
-        } catch (err) {
-          console.log(err);
-          replace(outputHtml, "warnparseconfig");  // Display a parse error.
-          return;
-        }
+      try {
+        const conf = (config === "default") ? config : JSON.parse(configText.value);
+        sanitizer = new Sanitizer(conf);
+      } catch (err) {
+        console.log(err);
+        replace(outputHtml, "warnparseconfig");  // Display a parse error.
+        return;
       }
       // Use the sanitizer to inject the <textarea>'s value safely into the DOM
       // and to render the textual output into the <output> element's
