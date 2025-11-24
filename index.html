@@ -236,11 +236,7 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
       // and to render the textual output into the <output> element's
       // `Node.innerText`:
       try {
-        if (config === "default") {
-            outputHtml.setHTML(input.value);
-        } else {
-            outputHtml.setHTML(input.value, {sanitizer: sanitizer});
-        }
+        outputHtml.setHTML(input.value, {sanitizer: sanitizer});
         outputText.textContent = outputHtml.innerHTML;  // Mirror as text.
       } catch (err) {
         // Display Sanitizer API error.
