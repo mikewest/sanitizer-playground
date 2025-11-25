@@ -208,7 +208,11 @@ el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</
         configUse.textContent = "";
         configText.readOnly = true;
         configText.value = '"default"';
-      }  else {
+      } else if (config === "custom") {
+        configOther.className = "";
+        configText.readOnly = false;
+        configUse.textContent = "config";
+      } else {
         createConf.className = "";
         useConf.className = "";
         setWithoutConf.className = "invisible";
