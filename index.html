@@ -103,7 +103,7 @@
     <a href="https://wicg.github.io/sanitizer-api/#config">documented in the specification</a>.
     For example, you may wish to only allow formatted text:</p>
     <pre><code><strong>const config = {
-        "elements": ["p", "span", "s", "i", "b", "em", "strong", "u"]
+  "elements": ["p", "span", "s", "i", "b", "em", "strong", "u"]
 };</strong>
 const <strong>s</strong> = new Sanitizer(<strong><em>config</em></strong>);
 el.setHTML(<em>untrustedInput</em>, {sanitizer: <strong><em>s</em></strong>});</code></pre>
